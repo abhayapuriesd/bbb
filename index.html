@@ -1,144 +1,143 @@
 async function exportWorkbook(){
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('Format', {views:[{state:'frozen', ySplit:4, xSplit:1}]});
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Format', {views:[{state:'frozen', ySplit:4, xSplit:1}]});
 
-    const headerFont = {bold:true, color:{argb:'FFFFFFFF'}, size:10};
-    const headerFill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF0F4C5C'}};
-    const titleFont = {bold:true, size:14, color:{argb:'FF0A3540'}};
-    const thin = {style:'thin', color:{argb:'FFBFC9CE'}};
-    const border = {top:thin,left:thin,right:thin,bottom:thin};
-    const centerWrap = {vertical:'middle', horizontal:'center', wrapText:true};
+  const headerFont = {bold:true, color:{argb:'FFFFFFFF'}, size:10};
+  const headerFill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF0F4C5C'}};
+  const titleFont = {bold:true, size:14, color:{argb:'FF0A3540'}};
+  const thin = {style:'thin', color:{argb:'FFBFC9CE'}};
+  const border = {top:thin,left:thin,right:thin,bottom:thin};
+  const centerWrap = {vertical:'middle', horizontal:'center', wrapText:true};
 
-    const colCount = 20; // A..T
+  const colCount = 20; // A..T
 
-    // Row1: title
-    ws.mergeCells(1,1,1,colCount);
-    const titleCell = ws.getCell(1,1);
-    titleCell.value = 'DEPOSIT WORK STATEMENT';
-    titleCell.font = titleFont;
-    titleCell.alignment = {horizontal:'center'};
+  // Row1: title
+  ws.mergeCells(1,1,1,colCount);
+  const titleCell = ws.getCell(1,1);
+  titleCell.value = 'DEPOSIT WORK STATEMENT';
+  titleCell.font = titleFont;
+  titleCell.alignment = {horizontal:'center'};
 
-    // Row2: ESD name / month
-    ws.mergeCells(2,1,2,10);
-    ws.mergeCells(2,11,2,colCount);
-    const esdCell = ws.getCell(2,1);
-    esdCell.value = 'Name of ESD- AESD:  ' + ($('#esdName').value || '');
-    esdCell.font = {bold:true, size:11};
-    const monthCell = ws.getCell(2,11);
-    monthCell.value = 'For the Month….. ' + ($('#stmtMonth').value || '');
-    monthCell.font = {bold:true, size:11};
-    monthCell.alignment = {horizontal:'right'};
+  // Row2: ESD name / month
+  ws.mergeCells(2,1,2,10);
+  ws.mergeCells(2,11,2,colCount);
+  const esdCell = ws.getCell(2,1);
+  esdCell.value = 'Name of ESD- AESD:  ' + ($('#esdName').value || '');
+  esdCell.font = {bold:true, size:11};
+  const monthCell = ws.getCell(2,11);
+  monthCell.value = 'For the Month….. ' + ($('#stmtMonth').value || '');
+  monthCell.font = {bold:true, size:11};
+  monthCell.alignment = {horizontal:'right'};
 
-    // Row3/4: headers
-    const headers1 = ['DATE','Load Security','METER COST','Service Connection\n(Installation)',
-      'METER/TRANSFORMER\nTESTING FEES','Processing Fee\n(Change process & NSC)',
-      'Mtr. Shifting/ Re-fixing/\nRemoving/Meter Seal Cost','Service Connection\n(Estimate & Supervision Amount)',
-      'TOTAL', null,null,null,null,null,null, 'Online into\nCircle A/c',
-      'NEFT/RTGS\nDIRECTLY TO CIRCLE','Date of\nNEFT/RTGS to Circle','Balance\nin Hand','Remarks'];
-    ws.mergeCells(3,10,3,15); // Deposits into DW A/C, BEC spans J..O
-    ws.getCell(3,10).value = 'Deposits into DW A/C, BEC';
-    const singleRowCols = [1,2,3,4,5,6,7,8,9,16,17,18,19,20];
-    singleRowCols.forEach(c=>{
-      ws.mergeCells(3,c,4,c);
-      ws.getCell(3,c).value = headers1[c-1];
-    });
+  // Row3/4: headers
+  const headers1 = ['DATE','Load Security','METER COST','Service Connection\n(Installation)',
+    'METER/TRANSFORMER\nTESTING FEES','Processing Fee\n(Change process & NSC)',
+    'Mtr. Shifting/ Re-fixing/\nRemoving/Meter Seal Cost','Service Connection\n(Estimate & Supervision Amount)',
+    'TOTAL', null,null,null,null,null,null, 'Online into\nCircle A/c',
+    'NEFT/RTGS\nDIRECTLY TO CIRCLE','Date of\nNEFT/RTGS to Circle','Balance\nin Hand','Remarks'];
+  ws.mergeCells(3,10,3,15); // Deposits into DW A/C, BEC spans J..O
+  ws.getCell(3,10).value = 'Deposits into DW A/C, BEC';
+  const singleRowCols = [1,2,3,4,5,6,7,8,9,16,17,18,19,20];
+  singleRowCols.forEach(c=>{
+    ws.mergeCells(3,c,4,c);
+    ws.getCell(3,c).value = headers1[c-1];
+  });
 
-    const subHeaders = {10:'Cash',11:'Draft/\nCheque',12:'Chq No./\nDraft No.',13:'Dated',14:"Name & Id\nof Cons",15:'Total'};
-    Object.keys(subHeaders).forEach(c=>{
-      ws.getCell(4,c).value = subHeaders[c];
-    });
+  const subHeaders = {10:'Cash',11:'Draft/\nCheque',12:'Chq No./\nDraft No.',13:'Dated',14:"Name & Id\nof Cons",15:'Total'};
+  Object.keys(subHeaders).forEach(c=>{
+    ws.getCell(4,c).value = subHeaders[c];
+  });
 
-    for(let r=3;r<=4;r++){
-      for(let c=1;c<=colCount;c++){
-        const cell = ws.getCell(r,c);
-        cell.font = headerFont;
-        cell.fill = headerFill;
-        cell.alignment = centerWrap;
-        cell.border = border;
-      }
-    }
-
-    // Row5: opening balance
-    ws.mergeCells(5,1,5,18);
-    ws.getCell(5,1).value = 'Opening Balance in Hand';
-    ws.getCell(5,1).font = {italic:true, size:10};
-    ws.getCell(5,19).value = Number($('#openingBal').value) || 0;
-    ws.getCell(5,19).font = {bold:true};
-    ws.getCell(5,19).numFmt = '#,##0';
-    for(let c=1;c<=colCount;c++){ ws.getCell(5,c).border = border; }
-
-    // Data rows
-    const numFmt = '#,##0';
-    const firstDataRow = 6;
-    let r = firstDataRow;
-
-    state.days.forEach(day=>{
-      // Date fixing using UTC to prevent 1-day backward shift in ExcelJS
-      const utcDate = new Date(Date.UTC(day.date.getFullYear(), day.date.getMonth(), day.date.getDate()));
-      
-      const rowVals = [
-        [1, utcDate, 'date'],
-        [2, day.loadSecurity, 'num'], [3, day.meterCost, 'num'], [4, day.installation, 'num'],
-        [5, day.testing, 'num'], [6, day.processingFee, 'num'], [7, day.meterShifting, 'num'],
-        [8, day.estimateSupervision, 'num'],
-        [9, { formula: `SUM(B${r}:H${r})` }, 'formula'],
-        [10, day.cash||null, 'num'], [11, day.draftCheque||null, 'num'],
-        [12, day.chqNo||null, 'text'], [13, day.dated||null, 'text'], [14, day.nameId||null, 'text'],
-        [15, { formula: `SUM(J${r}:K${r})` }, 'formula'],
-        [16, day.online, 'num'], [17, day.neft, 'num'],
-        [18, day.neftDate||null, 'text'],
-        // Balance in hand using running formula (e.g. S5 + I6 - O6 - P6 - Q6)
-        [19, { formula: `S${r-1}+I${r}-O${r}-P${r}-Q${r}` }, 'formula'],
-        [20, day.remarks||null, 'text'],
-      ];
-      
-      rowVals.forEach(([col, v, kind])=>{
-        const cell = ws.getCell(r, col);
-        cell.value = v;
-        cell.border = border;
-        cell.font = {size:10};
-        if(kind==='date'){ cell.numFmt = 'dd-mm-yyyy'; }
-        else if(kind==='num' || kind==='formula'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; }
-      });
-      r++;
-    });
-    const lastDataRow = r-1;
-
-    // Totals row
-    const totalRow = r;
-    ws.getCell(totalRow,1).value = 'TOTAL';
-    const sumCols = [2,3,4,5,6,7,8,9,10,11,15,16,17]; // Removed 19 (S) so it doesn't sum the running balances
-    sumCols.forEach(col=>{
-      const L = colLetter(col);
-      ws.getCell(totalRow,col).value = { formula: `SUM(${L}${firstDataRow}:${L}${lastDataRow})` };
-    });
-    
-    // For final Balance column (S), just bring down the last row's balance
-    ws.getCell(totalRow,19).value = { formula: `S${lastDataRow}` };
-
+  for(let r=3;r<=4;r++){
     for(let c=1;c<=colCount;c++){
-      const cell = ws.getCell(totalRow,c);
+      const cell = ws.getCell(r,c);
+      cell.font = headerFont;
+      cell.fill = headerFill;
+      cell.alignment = centerWrap;
       cell.border = border;
-      cell.font = {bold:true, size:10};
-      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EDF1'}};
-      if(typeof cell.value === 'object' || typeof cell.value === 'number') cell.numFmt = numFmt;
     }
-
-    // Notes section has been completely removed as requested.
-
-    // column widths
-    const widths = [13,10,10,12,11,12,14,13,10, 8,9,10,9,12,9, 10,10,10,11,16];
-    widths.forEach((w,i)=>{ ws.getColumn(i+1).width = w; });
-
-    const buf = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const monthLabel = ($('#stmtMonth').value || 'statement').replace(/[\/\\:*?"<>|]/g,'-');
-    a.href = url;
-    a.download = `DW_Statement_${monthLabel}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   }
+
+  // Row5: opening balance
+  ws.mergeCells(5,1,5,18);
+  ws.getCell(5,1).value = 'Opening Balance in Hand';
+  ws.getCell(5,1).font = {italic:true, size:10};
+  ws.getCell(5,19).value = Number($('#openingBal').value) || 0;
+  ws.getCell(5,19).font = {bold:true};
+  ws.getCell(5,19).numFmt = '#,##0';
+  for(let c=1;c<=colCount;c++){ ws.getCell(5,c).border = border; }
+
+  // Data rows
+  const numFmt = '#,##0';
+  const firstDataRow = 6;
+  let r = firstDataRow;
+
+  state.days.forEach(day=>{
+    // Date fixing using UTC
+    const utcDate = new Date(Date.UTC(day.date.getFullYear(), day.date.getMonth(), day.date.getDate()));
+    
+    const rowVals = [
+      [1, utcDate, 'date'],
+      [2, day.loadSecurity, 'num'], [3, day.meterCost, 'num'], [4, day.installation, 'num'],
+      [5, day.testing, 'num'], [6, day.processingFee, 'num'], [7, day.meterShifting, 'num'],
+      [8, day.estimateSupervision, 'num'],
+      [9, { formula: `SUM(B${r}:H${r})` }, 'formula'],
+      [10, day.cash||null, 'num'], [11, day.draftCheque||null, 'num'],
+      [12, day.chqNo||null, 'text'], [13, day.dated||null, 'text'], [14, day.nameId||null, 'text'],
+      [15, { formula: `SUM(J${r}:K${r})` }, 'formula'],
+      [16, day.online, 'num'], [17, day.neft, 'num'],
+      [18, day.neftDate||null, 'text'],
+      // Balance in hand running formula
+      [19, { formula: `S${r-1}+I${r}-O${r}-P${r}-Q${r}` }, 'formula'],
+      [20, day.remarks||null, 'text'],
+    ];
+    
+    rowVals.forEach(([col, v, kind])=>{
+      const cell = ws.getCell(r, col);
+      cell.value = v;
+      cell.border = border;
+      cell.font = {size:10};
+      if(kind==='date'){ cell.numFmt = 'dd-mm-yyyy'; }
+      else if(kind==='num' || kind==='formula'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; }
+    });
+    r++;
+  });
+  const lastDataRow = r-1;
+
+  // Totals row
+  const totalRow = r;
+  ws.getCell(totalRow,1).value = 'TOTAL';
+  const sumCols = [2,3,4,5,6,7,8,9,10,11,15,16,17]; 
+  sumCols.forEach(col=>{
+    // Yahan galti thi, ab isko theek karke Excel ke column letters generate kar diye hain
+    const L = String.fromCharCode(64 + col); 
+    ws.getCell(totalRow,col).value = { formula: `SUM(${L}${firstDataRow}:${L}${lastDataRow})` };
+  });
+  
+  // Balance column
+  ws.getCell(totalRow,19).value = { formula: `S${lastDataRow}` };
+
+  for(let c=1;c<=colCount;c++){
+    const cell = ws.getCell(totalRow,c);
+    cell.border = border;
+    cell.font = {bold:true, size:10};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EDF1'}};
+    if(typeof cell.value === 'object' || typeof cell.value === 'number') cell.numFmt = numFmt;
+  }
+
+  // column widths
+  const widths = [13,10,10,12,11,12,14,13,10, 8,9,10,9,12,9, 10,10,10,11,16];
+  widths.forEach((w,i)=>{ ws.getColumn(i+1).width = w; });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const monthLabel = ($('#stmtMonth').value || 'statement').replace(/[\/\\:*?"<>|]/g,'-');
+  a.href = url;
+  a.download = `DW_Statement_${monthLabel}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
