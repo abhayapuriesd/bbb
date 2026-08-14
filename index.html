@@ -393,6 +393,13 @@
           <input type="number" id="openingBal" value="0">
         </div>
       </div>
+      <div class="field-row">
+        <div class="field" style="grid-column:1 / -1;">
+          <label for="agentCodes">Cash-collecting agent codes (comma separated)</label>
+          <input type="text" id="agentCodes" value="40003813, 40003144">
+          <div class="secondary-txt" style="margin-top:2px;">Everything in "Received By" that is <strong>not</strong> one of these codes and not <code>ONLINE</code> is treated as remitted directly to Circle via NEFT/RTGS. Adjust if this month's agent codes are different.</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -506,10 +513,16 @@
     unmapped:{},       // billhead -> {count, sum}
     excludedMeterCost:{count:0, sum:0},
     ignoredTotals:{},  // reason -> sum
+    rawEntries:[],     // {key, amount, receivedBy} for every mapped, counted entry - used to re-derive Online/NEFT when agent codes change
   };
 
   const $ = sel => document.querySelector(sel);
   const fmt = n => (Math.round((n||0)*100)/100).toLocaleString('en-IN');
+
+  function getAgentCodes(){
+    const raw = ($('#agentCodes') && $('#agentCodes').value) || '';
+    return new Set(raw.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean));
+  }
 
   function emptyDay(dateObj){
     const d = {};
@@ -593,6 +606,7 @@
     const excludedMeterCost = {count:0, sum:0};
     const ignoredTotals = {};
     const monthCounts = {};
+    const state_rawEntries = [];
 
     for(let r=headerRowNum+1; r<=ws.rowCount; r++){
       const row = ws.getRow(r);
@@ -637,7 +651,7 @@
       }
 
       day[cat] += amount;
-      if(receivedBy === 'ONLINE') day.online += amount;
+      state_rawEntries.push({ key, amount, receivedBy });
     }
 
     // determine the dominant month/year
@@ -662,6 +676,9 @@
     state.unmapped = unmapped;
     state.excludedMeterCost = excludedMeterCost;
     state.ignoredTotals = ignoredTotals;
+    state.rawEntries = state_rawEntries;
+
+    computeOnlineNeft();
 
     const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     $('#stmtMonth').value = `${monthNames[month]}/${year}`;
@@ -693,6 +710,27 @@
     $('#parseBanner').innerHTML = html;
   }
 
+  function computeOnlineNeft(){
+    const agentCodes = getAgentCodes();
+    const byKey = {};
+    state.days.forEach(d=>{
+      d.online = 0; d.neft = 0;
+      const key = `${d.date.getFullYear()}-${String(d.date.getMonth()+1).padStart(2,'0')}-${String(d.date.getDate()).padStart(2,'0')}`;
+      byKey[key] = d;
+    });
+    state.rawEntries.forEach(({key, amount, receivedBy})=>{
+      const day = byKey[key];
+      if(!day) return;
+      if(receivedBy === 'ONLINE'){
+        day.online += amount;
+      } else if(!agentCodes.has(receivedBy)){
+        // any code that isn't a known cash-collecting agent, and isn't ONLINE,
+        // is treated as remitted directly to Circle via NEFT/RTGS
+        day.neft += amount;
+      }
+    });
+  }
+
   function totalsForDay(day){
     const feeTotal = CATS.reduce((s,c)=>s+day[c],0);
     const depositTotal = day.cash + day.draftCheque;
@@ -721,8 +759,11 @@
 
   // ---------- table rendering ----------
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function dateStr(d){
+    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+  }
   function dateLabel(d){
-    return `${String(d.getDate()).padStart(2,'0')}-${d.toLocaleString('en-US',{month:'short'})} <span style="color:#8fa3ac;font-weight:400;">${dayNames[d.getDay()]}</span>`;
+    return `${dateStr(d)} <span style="color:#8fa3ac;font-weight:400;">${dayNames[d.getDay()]}</span>`;
   }
 
   function renderTable(){
@@ -750,7 +791,7 @@
         <td><input type="text" data-f="nameId" value="${day.nameId||''}"></td>
         <td class="total-col dep-total">${fmt(t.depositTotal)}</td>
         <td class="auto">${fmt(day.online)}</td>
-        <td><input type="number" step="any" data-f="neft" value="${day.neft||''}"></td>
+        <td class="auto">${fmt(day.neft)}</td>
         <td><input type="text" data-f="neftDate" value="${day.neftDate||''}"></td>
         <td class="bal-cell${mismatchClass}">${fmt(t.balance)}</td>
         <td><input type="text" data-f="remarks" value="${day.remarks||''}"></td>
@@ -816,8 +857,21 @@
     </tr>`;
   }
 
+  $('#agentCodes').addEventListener('input', ()=>{
+    if(!state.days.length) return;
+    computeOnlineNeft();
+    renderTable();
+    renderSummary();
+  });
+
   // ---------- export ----------
   $('#downloadBtn').addEventListener('click', exportWorkbook);
+
+  function colLetter(n){
+    let s='';
+    while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); }
+    return s;
+  }
 
   async function exportWorkbook(){
     const wb = new ExcelJS.Workbook();
@@ -890,48 +944,53 @@
 
     // Data rows
     const numFmt = '#,##0';
-    let r = 6;
-    const totals = {};
-    CATS.forEach(c=>totals[c]=0);
-    let sumFee=0,sumCash=0,sumDraft=0,sumDeposit=0,sumOnline=0,sumNeft=0,sumBal=0;
+    const firstDataRow = 6;
+    let r = firstDataRow;
 
     state.days.forEach(day=>{
-      const t = totalsForDay(day);
-      CATS.forEach(c=>totals[c]+=day[c]);
-      sumFee+=t.feeTotal; sumCash+=day.cash; sumDraft+=day.draftCheque;
-      sumDeposit+=t.depositTotal; sumOnline+=day.online; sumNeft+=day.neft; sumBal+=t.balance;
-
+      // B..H: raw category amounts. I (TOTAL), O (deposit total) and S (balance) are formulas
+      // referencing this same row, so they recalculate in Excel if a cell is edited later.
       const rowVals = [
-        day.date, day.loadSecurity, day.meterCost, day.installation, day.testing,
-        day.processingFee, day.meterShifting, day.estimateSupervision, t.feeTotal,
-        day.cash||null, day.draftCheque||null, day.chqNo||null, day.dated||null, day.nameId||null,
-        t.depositTotal, day.online, day.neft||null, day.neftDate||null, t.balance, day.remarks||null
+        [1, day.date, 'date'],
+        [2, day.loadSecurity, 'num'], [3, day.meterCost, 'num'], [4, day.installation, 'num'],
+        [5, day.testing, 'num'], [6, day.processingFee, 'num'], [7, day.meterShifting, 'num'],
+        [8, day.estimateSupervision, 'num'],
+        [9, { formula: `SUM(B${r}:H${r})` }, 'formula'],
+        [10, day.cash||null, 'num'], [11, day.draftCheque||null, 'num'],
+        [12, day.chqNo||null, 'text'], [13, day.dated||null, 'text'], [14, day.nameId||null, 'text'],
+        [15, { formula: `SUM(J${r}:K${r})` }, 'formula'],
+        [16, day.online, 'num'], [17, day.neft, 'num'],
+        [18, day.neftDate||null, 'text'],
+        [19, { formula: `I${r}-(O${r}+P${r}+Q${r})` }, 'formula'],
+        [20, day.remarks||null, 'text'],
       ];
-      rowVals.forEach((v,i)=>{
-        const cell = ws.getCell(r, i+1);
+      rowVals.forEach(([col, v, kind])=>{
+        const cell = ws.getCell(r, col);
         cell.value = v;
         cell.border = border;
-        if(i===0){ cell.numFmt = 'dd-mmm-yyyy'; cell.font={size:10}; }
-        else if(typeof v === 'number'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; cell.font={size:10}; }
-        else { cell.font={size:10}; }
+        cell.font = {size:10};
+        if(kind==='date'){ cell.numFmt = 'dd-mm-yyyy'; }
+        else if(kind==='num' || kind==='formula'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; }
       });
       r++;
     });
+    const lastDataRow = r-1;
 
-    // Totals row
-    const totalRowVals = [
-      'TOTAL', totals.loadSecurity, totals.meterCost, totals.installation, totals.testing,
-      totals.processingFee, totals.meterShifting, totals.estimateSupervision, sumFee,
-      sumCash, sumDraft, null, null, null, sumDeposit, sumOnline, sumNeft, null, sumBal, null
-    ];
-    totalRowVals.forEach((v,i)=>{
-      const cell = ws.getCell(r, i+1);
-      cell.value = v;
+    // Totals row - every figure is a live SUM() formula over the data rows above
+    const totalRow = r;
+    ws.getCell(totalRow,1).value = 'TOTAL';
+    const sumCols = [2,3,4,5,6,7,8,9,10,11,15,16,17,19]; // B,C,D,E,F,G,H,I,J,K,O,P,Q,S
+    sumCols.forEach(col=>{
+      const L = colLetter(col);
+      ws.getCell(totalRow,col).value = { formula: `SUM(${L}${firstDataRow}:${L}${lastDataRow})` };
+    });
+    for(let c=1;c<=colCount;c++){
+      const cell = ws.getCell(totalRow,c);
       cell.border = border;
       cell.font = {bold:true, size:10};
       cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EDF1'}};
-      if(typeof v === 'number') cell.numFmt = numFmt;
-    });
+      if(typeof cell.value === 'object' || typeof cell.value === 'number') cell.numFmt = numFmt;
+    }
     r++;
 
     // Notes
