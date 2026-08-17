@@ -948,10 +948,10 @@
     let r = firstDataRow;
 
     state.days.forEach(day=>{
-      // B..H: raw category amounts. I (TOTAL), O (deposit total) and S (balance) are formulas
-      // referencing this same row, so they recalculate in Excel if a cell is edited later.
+      // B..H: raw category amounts. I (TOTAL) and O (deposit total) are formulas for this row.
+      // S (balance in hand) is a running balance: previous row's balance + today's total - today's remittances.
       const rowVals = [
-        [1, day.date, 'date'],
+        [1, dateStr(day.date), 'text'],
         [2, day.loadSecurity, 'num'], [3, day.meterCost, 'num'], [4, day.installation, 'num'],
         [5, day.testing, 'num'], [6, day.processingFee, 'num'], [7, day.meterShifting, 'num'],
         [8, day.estimateSupervision, 'num'],
@@ -961,7 +961,7 @@
         [15, { formula: `SUM(J${r}:K${r})` }, 'formula'],
         [16, day.online, 'num'], [17, day.neft, 'num'],
         [18, day.neftDate||null, 'text'],
-        [19, { formula: `I${r}-(O${r}+P${r}+Q${r})` }, 'formula'],
+        [19, { formula: `S${r-1}+I${r}-O${r}-P${r}-Q${r}` }, 'formula'],
         [20, day.remarks||null, 'text'],
       ];
       rowVals.forEach(([col, v, kind])=>{
@@ -969,21 +969,23 @@
         cell.value = v;
         cell.border = border;
         cell.font = {size:10};
-        if(kind==='date'){ cell.numFmt = 'dd-mm-yyyy'; }
-        else if(kind==='num' || kind==='formula'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; }
+        if(kind==='num' || kind==='formula'){ cell.numFmt = numFmt; cell.alignment={horizontal:'right'}; }
+        if(kind==='text' && col===1){ cell.font = {size:10, bold:true}; }
       });
       r++;
     });
     const lastDataRow = r-1;
 
-    // Totals row - every figure is a live SUM() formula over the data rows above
+    // Totals row - every figure is a live SUM() formula over the data rows above.
+    // Balance in Hand is not summed - it shows the running closing balance (last row's S cell).
     const totalRow = r;
     ws.getCell(totalRow,1).value = 'TOTAL';
-    const sumCols = [2,3,4,5,6,7,8,9,10,11,15,16,17,19]; // B,C,D,E,F,G,H,I,J,K,O,P,Q,S
+    const sumCols = [2,3,4,5,6,7,8,9,10,11,15,16,17]; // B,C,D,E,F,G,H,I,J,K,O,P,Q
     sumCols.forEach(col=>{
       const L = colLetter(col);
       ws.getCell(totalRow,col).value = { formula: `SUM(${L}${firstDataRow}:${L}${lastDataRow})` };
     });
+    ws.getCell(totalRow,19).value = { formula: `S${lastDataRow}` }; // closing balance
     for(let c=1;c<=colCount;c++){
       const cell = ws.getCell(totalRow,c);
       cell.border = border;
@@ -992,26 +994,6 @@
       if(typeof cell.value === 'object' || typeof cell.value === 'number') cell.numFmt = numFmt;
     }
     r++;
-
-    // Notes
-    r+=1;
-    ws.getCell(r,1).value = 'Notes:';
-    ws.getCell(r,1).font = {bold:true, size:10};
-    r++;
-    const notes = [];
-    if(state.excludedMeterCost.count){
-      notes.push(`Meter Cost figures exclude ${state.excludedMeterCost.count} entr${state.excludedMeterCost.count===1?'y':'ies'} of ₹2,400 / ₹6,000 (₹${fmt(state.excludedMeterCost.sum)} total), as instructed.`);
-    }
-    notes.push('Temporary Service Connection Energy Charge and Disconnection/Reconnection charges are excluded from this statement, as instructed.');
-    Object.keys(state.unmapped).forEach(k=>{
-      notes.push(`Bill head "${k}" (${state.unmapped[k].count} entries, ₹${fmt(state.unmapped[k].sum)}) did not match a column and was not included — add manually if needed.`);
-    });
-    notes.forEach(n=>{
-      ws.mergeCells(r,1,r,colCount);
-      ws.getCell(r,1).value = '• ' + n;
-      ws.getCell(r,1).font = {size:9, italic:true, color:{argb:'FF4C5C6B'}};
-      r++;
-    });
 
     // column widths
     const widths = [13,10,10,12,11,12,14,13,10, 8,9,10,9,12,9, 10,10,10,9,16];
