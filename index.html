@@ -3,10 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DW Statement Generator</title>
+<title>AESD Statement Tools — RCDC &amp; DW Statement Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
-  :root{
+body{ margin:0; }
+
+#tabBar{
+  display:flex;
+  gap:0;
+  background:#12233E;
+  padding:0 20px;
+  position:sticky;
+  top:0;
+  z-index:50;
+  border-bottom:3px solid #b5651d;
+}
+#tabBar button{
+  appearance:none;
+  border:none;
+  background:transparent;
+  color:#9fb2c2;
+  font-family:'Inter','IBM Plex Sans',system-ui,sans-serif;
+  font-size:13.5px;
+  font-weight:600;
+  padding:16px 22px;
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  margin-bottom:-3px;
+  transition:color .15s, border-color .15s;
+}
+#tabBar button:hover{ color:#fff; }
+#tabBar button.active{
+  color:#fff;
+  border-bottom-color:#e8b04d;
+}
+#tabBar button:focus-visible{ outline:2px solid #e8b04d; outline-offset:-2px; }
+.app-pane{ display:none; }
+.app-pane.active{ display:block; }
+
+#rcdcApp{
+    --navy:#1B3358; --navy-deep:#12233E; --teal:#0E7C7B; --amber:#B7791F;
+    --paper:#F6F7F9; --card:#FFFFFF; --ink:#1F2430; --muted:#66707E;
+    --line:#E1E5EA; --line-strong:#C7CDD6; --pos:#0E7C4F; --neg:#B23B3B;
+  }#rcdcApp * {box-sizing:border-box;}#rcdcApp html, #rcdcApp body {margin:0;padding:0;}#rcdcApp body {background:var(--paper); color:var(--ink); font-family:'Inter', system-ui, sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;}#rcdcApp .wrap {max-width:980px; margin:0 auto; padding:40px 20px 80px;}#rcdcApp .letterhead {
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:#fff; border-radius:10px; padding:34px 38px 30px; position:relative; overflow:hidden;
+  }#rcdcApp .letterhead::after {
+    content:""; position:absolute; top:-60px; right:-60px; width:220px; height:220px;
+    border-radius:50%; background:radial-gradient(circle, rgba(14,124,123,0.35), transparent 70%);
+  }#rcdcApp .org {font-size:13px; letter-spacing:0.02em; color:#B9C6DA; position:relative; z-index:1;}#rcdcApp h1 {
+    font-family:'Source Serif 4', serif; font-weight:600; font-size:clamp(22px, 3.2vw, 30px);
+    line-height:1.28; margin:14px 0 8px; position:relative; z-index:1; max-width:640px;
+  }#rcdcApp .tagline {font-size:15px; color:#D7DEE9; position:relative; z-index:1; max-width:560px;}#rcdcApp .section-title {display:flex; align-items:center; gap:10px; margin:36px 0 14px;}#rcdcApp .section-title h2 {font-family:'Source Serif 4', serif; font-weight:600; font-size:19px; margin:0; color:var(--navy-deep);}#rcdcApp .section-title .rule {flex:1; height:1px; background:var(--line-strong);}#rcdcApp .card {background:var(--card); border:1px solid var(--line); border-radius:10px; padding:24px 26px;}#rcdcApp .step-badge {
+    display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
+    border-radius:50%; background:var(--teal); color:#fff; font-size:12px; font-weight:700; margin-right:9px;
+  }#rcdcApp .upload-grid {display:grid; grid-template-columns:1fr 1fr; gap:16px;}#rcdcApp .dropzone {
+    border:1.5px dashed var(--line-strong); border-radius:9px; padding:22px 18px; text-align:center;
+    cursor:pointer; transition:border-color .15s, background .15s; background:#FBFCFD;
+  }#rcdcApp .dropzone:hover, #rcdcApp .dropzone.drag {border-color:var(--teal); background:#F0F8F7;}#rcdcApp .dropzone.filled {border-color:var(--pos); background:#F1F9F4;}#rcdcApp .dropzone .dz-title {font-weight:600; font-size:14.5px; margin-bottom:4px; color:var(--navy-deep);}#rcdcApp .dropzone .dz-sub {font-size:12.5px; color:var(--muted);}#rcdcApp .dropzone .dz-file {font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--pos); margin-top:8px; word-break:break-all;}#rcdcApp .dropzone input {display:none;}#rcdcApp details.adv {margin-top:18px;}#rcdcApp details.adv summary {cursor:pointer; font-size:13.5px; font-weight:600; color:var(--navy); padding:6px 0;}#rcdcApp .adv-grid {display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;}#rcdcApp .field {display:flex; flex-direction:column; gap:5px;}#rcdcApp .field label {font-size:12.5px; color:var(--muted); font-weight:600;}#rcdcApp .field input, #rcdcApp .field select {
+    font-family:'Inter', sans-serif; font-size:14px; padding:8px 10px; border:1px solid var(--line-strong);
+    border-radius:7px; background:#fff; color:var(--ink);
+  }#rcdcApp .field input:focus, #rcdcApp .field select:focus {outline:2px solid var(--teal); outline-offset:1px;}#rcdcApp .field .hint {font-size:11px; color:#93A0AF;}#rcdcApp .row-actions {display:flex; align-items:center; gap:14px; margin-top:22px; flex-wrap:wrap;}#rcdcApp button.primary {
+    font-family:'Inter', sans-serif; font-size:14px; font-weight:700; background:var(--navy); color:#fff;
+    border:none; padding:11px 22px; border-radius:8px; cursor:pointer;
+  }#rcdcApp button.primary:disabled {background:#B9C2CE; cursor:not-allowed;}#rcdcApp button.primary:not(:disabled):hover {background:var(--navy-deep);}#rcdcApp button.secondary {
+    font-family:'Inter', sans-serif; font-size:13.5px; font-weight:600; background:#fff; color:var(--navy);
+    border:1.5px solid var(--navy); padding:9px 18px; border-radius:8px; cursor:pointer;
+  }#rcdcApp button.secondary:hover {background:#EEF1F6;}#rcdcApp button:focus-visible {outline:3px solid var(--teal); outline-offset:2px;}#rcdcApp .status {font-size:13px; color:var(--muted);}#rcdcApp .status.err {color:var(--neg); font-weight:600;}#rcdcApp .status.ok {color:var(--pos); font-weight:600;}#rcdcApp .summary {display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-top:22px;}#rcdcApp .stat {background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 16px 14px;}#rcdcApp .stat .label {font-size:12px; color:var(--muted); margin-bottom:7px;}#rcdcApp .stat .value {font-family:'IBM Plex Mono', monospace; font-size:20px; font-weight:600; color:var(--navy);}#rcdcApp .stat.closing .value {color:var(--pos);}#rcdcApp .table-card {background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;}#rcdcApp .table-scroll {overflow-x:auto; max-height:520px; overflow-y:auto;}#rcdcApp table {width:100%; border-collapse:collapse; font-size:14px; min-width:600px;}#rcdcApp thead th {
+    position:sticky; top:0; background:var(--navy); color:#fff; text-align:right; font-weight:600;
+    padding:10px 16px; font-size:12.5px;
+  }#rcdcApp thead th:first-child, #rcdcApp thead th:nth-child(2) {text-align:left;}#rcdcApp tbody td {padding:8px 16px; text-align:right; border-bottom:1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size:13.5px;}#rcdcApp tbody td:first-child {font-family:'Inter', sans-serif; color:var(--muted); text-align:left; width:44px;}#rcdcApp tbody td:nth-child(2) {font-family:'Inter', sans-serif; text-align:left;}#rcdcApp tbody tr:nth-child(even) {background:#FAFBFC;}#rcdcApp tfoot td {padding:11px 16px; font-weight:700; font-family:'IBM Plex Mono', monospace; background:#EEF1F6; border-top:2px solid var(--line-strong);}#rcdcApp tfoot td:first-child, #rcdcApp tfoot td:nth-child(2) {font-family:'Inter', sans-serif; text-align:left; color:var(--navy-deep);}#rcdcApp .recon {background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 24px;}#rcdcApp .recon-row {display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px dashed var(--line); font-size:14px;}#rcdcApp .recon-row:last-child {border-bottom:none;}#rcdcApp .recon-row .amt {font-family:'IBM Plex Mono', monospace; font-weight:600; white-space:nowrap;}#rcdcApp .recon-row.final {padding-top:13px; border-top:2px solid var(--line-strong); margin-top:3px;}#rcdcApp .recon-row.final .amt {color:var(--pos); font-size:15.5px;}#rcdcApp #resultsArea {display:none;}#rcdcApp .download-row {display:flex; justify-content:flex-end; margin-top:20px;}#rcdcApp .notes {margin-top:34px; font-size:12.5px; color:var(--muted);}#rcdcApp .notes code {background:#EEF1F6; padding:1px 6px; border-radius:4px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;}#rcdcApp footer {text-align:center; margin-top:46px; font-size:12px; color:#93A0AF;}
+
+  @media (max-width:720px){#rcdcApp .upload-grid, #rcdcApp .adv-grid {grid-template-columns:1fr;}#rcdcApp .summary {grid-template-columns:repeat(2,1fr);}}
+#dwApp{
     --ink:#16232e;
     --ink-soft:#4c5c6b;
     --line:#d7dee4;
@@ -23,19 +96,13 @@
     --bad-soft:#fbe7e6;
     --mono: 'IBM Plex Mono', 'Consolas', monospace;
     --sans: 'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
-  }
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
-  *{box-sizing:border-box;}
-  body{
+  }#dwApp * {box-sizing:border-box;}#dwApp body {
     margin:0;
     font-family:var(--sans);
     background:var(--paper);
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
-  }
-
-  .topbar{
+  }#dwApp .topbar {
     background:var(--brand-deep);
     color:#fff;
     padding:22px 28px;
@@ -45,56 +112,45 @@
     flex-wrap:wrap;
     gap:12px;
     border-bottom:4px solid var(--accent);
-  }
-  .topbar .mark{
+  }#dwApp .topbar .mark {
     display:flex;align-items:center;gap:14px;
-  }
-  .mark .glyph{
+  }#dwApp .mark .glyph {
     width:38px;height:38px;border:2px solid #fff;border-radius:4px;
     display:flex;align-items:center;justify-content:center;
     font-family:var(--mono);font-weight:600;font-size:13px;
     flex-shrink:0;
-  }
-  .topbar h1{
+  }#dwApp .topbar h1 {
     font-size:17px;
     margin:0;
     font-weight:600;
     letter-spacing:.2px;
-  }
-  .topbar p{
+  }#dwApp .topbar p {
     margin:2px 0 0;
     font-size:12.5px;
     color:#c7dade;
-  }
-  .topbar .step-indicator{
+  }#dwApp .topbar .step-indicator {
     font-family:var(--mono);
     font-size:11px;
     color:#9fc2c8;
     letter-spacing:.5px;
     text-transform:uppercase;
-  }
-
-  main{
+  }#dwApp main {
     max-width:1400px;
     margin:0 auto;
     padding:28px 28px 80px;
-  }
-
-  .panel{
+  }#dwApp .panel {
     background:var(--card);
     border:1px solid var(--line);
     border-radius:6px;
     margin-bottom:22px;
     overflow:hidden;
-  }
-  .panel-head{
+  }#dwApp .panel-head {
     padding:14px 20px;
     border-bottom:1px solid var(--line-soft);
     display:flex;
     align-items:baseline;
     gap:10px;
-  }
-  .panel-head .num{
+  }#dwApp .panel-head .num {
     font-family:var(--mono);
     font-size:12px;
     color:#fff;
@@ -103,21 +159,16 @@
     border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;
-  }
-  .panel-head h2{
+  }#dwApp .panel-head h2 {
     font-size:14.5px;
     margin:0;
     font-weight:600;
-  }
-  .panel-head .sub{
+  }#dwApp .panel-head .sub {
     font-size:12px;
     color:var(--ink-soft);
     margin-left:auto;
-  }
-  .panel-body{padding:20px;}
-
-  /* Upload zone */
-  .dropzone{
+  }#dwApp .panel-body {padding:20px;}#dwApp /* Upload zone */
+  .dropzone {
     border:1.5px dashed var(--line);
     border-radius:6px;
     padding:30px 20px;
@@ -125,17 +176,10 @@
     cursor:pointer;
     transition:border-color .15s, background .15s;
     background:#fbfcfc;
-  }
-  .dropzone:hover, .dropzone.drag{
+  }#dwApp .dropzone:hover, #dwApp .dropzone.drag {
     border-color:var(--brand);
     background:var(--brand-soft);
-  }
-  .dropzone svg{width:30px;height:30px;color:var(--brand);margin-bottom:8px;}
-  .dropzone .primary-txt{font-size:13.5px;font-weight:600;color:var(--ink);}
-  .dropzone .secondary-txt{font-size:12px;color:var(--ink-soft);margin-top:4px;}
-  input[type=file]{display:none;}
-
-  .file-chip{
+  }#dwApp .dropzone svg {width:30px;height:30px;color:var(--brand);margin-bottom:8px;}#dwApp .dropzone .primary-txt {font-size:13.5px;font-weight:600;color:var(--ink);}#dwApp .dropzone .secondary-txt {font-size:12px;color:var(--ink-soft);margin-top:4px;}#dwApp input[type=file] {display:none;}#dwApp .file-chip {
     display:inline-flex;align-items:center;gap:8px;
     background:var(--brand-soft);
     border:1px solid #bcd4d8;
@@ -145,28 +189,22 @@
     font-size:12.5px;
     font-family:var(--mono);
     margin-top:12px;
-  }
-  .file-chip button{
+  }#dwApp .file-chip button {
     border:none;background:none;color:var(--brand-deep);
     cursor:pointer;font-size:14px;font-weight:700;line-height:1;
     padding:0;
-  }
-
-  .field-row{
+  }#dwApp .field-row {
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
     gap:16px;
     margin-top:18px;
-  }
-  .field{display:flex;flex-direction:column;gap:6px;}
-  .field label{
+  }#dwApp .field {display:flex;flex-direction:column;gap:6px;}#dwApp .field label {
     font-size:11.5px;
     text-transform:uppercase;
     letter-spacing:.4px;
     color:var(--ink-soft);
     font-weight:600;
-  }
-  .field input{
+  }#dwApp .field input {
     border:1px solid var(--line);
     border-radius:4px;
     padding:9px 10px;
@@ -174,10 +212,7 @@
     font-family:var(--sans);
     color:var(--ink);
     background:#fff;
-  }
-  .field input:focus{outline:2px solid var(--brand);outline-offset:1px;}
-
-  .btn{
+  }#dwApp .field input:focus {outline:2px solid var(--brand);outline-offset:1px;}#dwApp .btn {
     display:inline-flex;align-items:center;gap:8px;
     border:none;
     border-radius:4px;
@@ -187,33 +222,18 @@
     font-family:var(--sans);
     cursor:pointer;
     transition:transform .06s, box-shadow .15s;
-  }
-  .btn:active{transform:translateY(1px);}
-  .btn-primary{background:var(--brand);color:#fff;}
-  .btn-primary:hover{background:var(--brand-deep);}
-  .btn-accent{background:var(--accent);color:#fff;}
-  .btn-accent:hover{background:#94510f;}
-  .btn[disabled]{opacity:.45;cursor:not-allowed;}
-  .btn svg{width:15px;height:15px;}
-
-  .banner{
+  }#dwApp .btn:active {transform:translateY(1px);}#dwApp .btn-primary {background:var(--brand);color:#fff;}#dwApp .btn-primary:hover {background:var(--brand-deep);}#dwApp .btn-accent {background:var(--accent);color:#fff;}#dwApp .btn-accent:hover {background:#94510f;}#dwApp .btn[disabled] {opacity:.45;cursor:not-allowed;}#dwApp .btn svg {width:15px;height:15px;}#dwApp .banner {
     border-radius:5px;
     padding:12px 14px;
     font-size:12.5px;
     line-height:1.5;
     margin-top:14px;
     border:1px solid transparent;
-  }
-  .banner-warn{background:var(--accent-soft);border-color:#e6c299;color:#6b3f0d;}
-  .banner-info{background:var(--brand-soft);border-color:#bcd4d8;color:var(--brand-deep);}
-  .banner ul{margin:6px 0 0;padding-left:18px;}
-  .banner code{
+  }#dwApp .banner-warn {background:var(--accent-soft);border-color:#e6c299;color:#6b3f0d;}#dwApp .banner-info {background:var(--brand-soft);border-color:#bcd4d8;color:var(--brand-deep);}#dwApp .banner ul {margin:6px 0 0;padding-left:18px;}#dwApp .banner code {
     background:rgba(0,0,0,.06);
     padding:1px 5px;border-radius:3px;font-family:var(--mono);
-  }
-
-  /* summary strip */
-  .summary-strip{
+  }#dwApp /* summary strip */
+  .summary-strip {
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:1px;
@@ -222,41 +242,32 @@
     border-radius:6px;
     overflow:hidden;
     margin-bottom:22px;
-  }
-  .summary-cell{
+  }#dwApp .summary-cell {
     background:var(--card);
     padding:14px 16px;
-  }
-  .summary-cell .label{
+  }#dwApp .summary-cell .label {
     font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
     color:var(--ink-soft);font-weight:600;
-  }
-  .summary-cell .value{
+  }#dwApp .summary-cell .value {
     font-family:var(--mono);font-size:19px;font-weight:600;
     color:var(--brand-deep);margin-top:4px;
-  }
-  .summary-cell.accent .value{color:var(--accent);}
-
-  /* table */
-  .table-scroll{
+  }#dwApp .summary-cell.accent .value {color:var(--accent);}#dwApp /* table */
+  .table-scroll {
     overflow-x:auto;
     border:1px solid var(--line);
     border-radius:6px;
-  }
-  table.stmt{
+  }#dwApp table.stmt {
     border-collapse:collapse;
     width:100%;
     min-width:1500px;
     font-size:12px;
     font-family:var(--mono);
-  }
-  table.stmt th, table.stmt td{
+  }#dwApp table.stmt th, #dwApp table.stmt td {
     border:1px solid var(--line-soft);
     padding:6px 7px;
     text-align:right;
     white-space:nowrap;
-  }
-  table.stmt th{
+  }#dwApp table.stmt th {
     background:var(--brand);
     color:#fff;
     font-family:var(--sans);
@@ -267,11 +278,9 @@
     z-index:2;
     font-size:11px;
     letter-spacing:.2px;
-  }
-  table.stmt thead tr.group th{
+  }#dwApp table.stmt thead tr.group th {
     background:var(--brand-deep);
-  }
-  table.stmt td.date-col, table.stmt th.date-col{
+  }#dwApp table.stmt td.date-col, #dwApp table.stmt th.date-col {
     text-align:left;
     font-family:var(--sans);
     font-weight:600;
@@ -279,20 +288,13 @@
     left:0;
     background:#fff;
     z-index:1;
-  }
-  table.stmt th.date-col{background:var(--brand-deep);z-index:3;}
-  table.stmt tbody tr:nth-child(even) td.date-col{background:#f8fafb;}
-  table.stmt td.auto{background:#f3f7f8;color:var(--brand-deep);font-weight:600;}
-  table.stmt td.total-col{background:var(--brand-soft);color:var(--brand-deep);font-weight:700;}
-  table.stmt tfoot td{
+  }#dwApp table.stmt th.date-col {background:var(--brand-deep);z-index:3;}#dwApp table.stmt tbody tr:nth-child(even) td.date-col {background:#f8fafb;}#dwApp table.stmt td.auto {background:#f3f7f8;color:var(--brand-deep);font-weight:600;}#dwApp table.stmt td.total-col {background:var(--brand-soft);color:var(--brand-deep);font-weight:700;}#dwApp table.stmt tfoot td {
     background:#eef2f3;
     font-weight:700;
     color:var(--ink);
     position:sticky;
     bottom:0;
-  }
-  table.stmt tfoot td.date-col{background:#dfe6e8;}
-  table.stmt input{
+  }#dwApp table.stmt tfoot td.date-col {background:#dfe6e8;}#dwApp table.stmt input {
     width:100%;
     border:none;
     background:transparent;
@@ -301,44 +303,138 @@
     font-size:12px;
     color:var(--ink);
     padding:2px;
-  }
-  table.stmt input[type=text]{text-align:left;font-family:var(--sans);}
-  table.stmt input:focus{outline:1.5px solid var(--brand);background:#fff;}
-  table.stmt td.mismatch input{color:var(--bad);font-weight:700;}
-  table.stmt td.mismatch{background:var(--bad-soft);}
-
-  .legend{
+  }#dwApp table.stmt input[type=text] {text-align:left;font-family:var(--sans);}#dwApp table.stmt input:focus {outline:1.5px solid var(--brand);background:#fff;}#dwApp table.stmt td.mismatch input {color:var(--bad);font-weight:700;}#dwApp table.stmt td.mismatch {background:var(--bad-soft);}#dwApp .legend {
     display:flex;gap:18px;flex-wrap:wrap;
     padding:12px 20px;
     font-size:11.5px;
     color:var(--ink-soft);
     border-top:1px solid var(--line-soft);
     background:#fbfcfc;
-  }
-  .legend span{display:flex;align-items:center;gap:6px;}
-  .swatch{width:12px;height:12px;border-radius:2px;display:inline-block;border:1px solid var(--line);}
-  .sw-auto{background:#f3f7f8;}
-  .sw-total{background:var(--brand-soft);}
-  .sw-manual{background:#fff;}
-  .sw-mismatch{background:var(--bad-soft);}
-
-  footer{
+  }#dwApp .legend span {display:flex;align-items:center;gap:6px;}#dwApp .swatch {width:12px;height:12px;border-radius:2px;display:inline-block;border:1px solid var(--line);}#dwApp .sw-auto {background:#f3f7f8;}#dwApp .sw-total {background:var(--brand-soft);}#dwApp .sw-manual {background:#fff;}#dwApp .sw-mismatch {background:var(--bad-soft);}#dwApp footer {
     text-align:center;
     font-size:11.5px;
     color:var(--ink-soft);
     padding:20px;
-  }
+  }#dwApp .hidden {display:none !important;}
 
-  .hidden{display:none !important;}
-
-  @media (max-width:640px){
-    main{padding:16px;}
-    .topbar{padding:16px;}
-  }
+  @media (max-width:640px){#dwApp main {padding:16px;}#dwApp .topbar {padding:16px;}}
 </style>
 </head>
 <body>
 
+<div id="tabBar">
+  <button type="button" class="tab-btn active" data-target="rcdcApp">RCDC Deposit Statement</button>
+  <button type="button" class="tab-btn" data-target="dwApp">DW Statement</button>
+</div>
+
+<div id="rcdcApp" class="app-pane active">
+<div class="wrap">
+
+  <div class="letterhead">
+    <div class="org">APDCL Subsidiary A/c — RCDC Deposit Register</div>
+    <h1>RCDC Deposit Statement Generator</h1>
+    <div class="tagline">Upload the month's MIS Daily Collection and Headwise Collection Report — the day-wise statement is built automatically and ready to download as Excel.</div>
+  </div>
+
+  <div class="section-title"><h2><span class="step-badge">1</span>Upload source files</h2><div class="rule"></div></div>
+  <div class="card">
+    <div class="upload-grid">
+      <label class="dropzone" id="dzMis">
+        <div class="dz-title">MIS Daily Collection</div>
+        <div class="dz-sub">.csv, .xls or .xlsx — click or drop file</div>
+        <div class="dz-file" id="dzMisFile"></div>
+        <input type="file" id="fileMis" accept=".csv,.xls,.xlsx">
+      </label>
+      <label class="dropzone" id="dzHw">
+        <div class="dz-title">Headwise Collection Report</div>
+        <div class="dz-sub">.xls or .xlsx — click or drop file</div>
+        <div class="dz-file" id="dzHwFile"></div>
+        <input type="file" id="fileHw" accept=".csv,.xls,.xlsx">
+      </label>
+    </div>
+
+    <details class="adv">
+      <summary>Statement settings (month, sub-division, ID mapping)</summary>
+      <div class="adv-grid">
+        <div class="field">
+          <label>Month</label>
+          <select id="fMonth"></select>
+        </div>
+        <div class="field">
+          <label>Year</label>
+          <input type="number" id="fYear" value="2026">
+        </div>
+        <div class="field">
+          <label>Sub-division name</label>
+          <input type="text" id="fSubdiv" value="ABHAYAPURI ELECTRICAL SUB-DIVISION">
+        </div>
+        <div class="field">
+          <label>Opening balance (₹)</label>
+          <input type="number" id="fOpening" value="0">
+        </div>
+        <div class="field">
+          <label>Cash-deposit collector IDs</label>
+          <input type="text" id="fCashIds" value="40003813, 40003144, 40014521">
+          <span class="hint">comma-separated collector IDs whose MIS collection goes into Cash Deposit to Bank</span>
+        </div>
+        <div class="field">
+          <label>Online collector ID</label>
+          <input type="text" id="fOnlineId" value="ONLINE">
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Headwise bill heads added to Cash Deposit / Total Collection</label>
+          <input type="text" id="fDisconnHeads" value="DISCONNECTION RECONNECTION CHARGE, NEW SERVICE CONNECTION DISCONNECTION CHARGE">
+          <span class="hint">comma-separated Bill Head values from the headwise report</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="row-actions">
+      <button class="primary" id="btnGenerate" disabled>Generate statement</button>
+      <span class="status" id="statusMsg"></span>
+    </div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="section-title"><h2><span class="step-badge">2</span>Review &amp; download</h2><div class="rule"></div></div>
+
+    <div class="summary">
+      <div class="stat"><div class="label">Opening balance</div><div class="value" id="statOpening">—</div></div>
+      <div class="stat"><div class="label">Total collection</div><div class="value" id="statCollection">—</div></div>
+      <div class="stat"><div class="label">Total deposit</div><div class="value" id="statDeposit">—</div></div>
+      <div class="stat closing"><div class="label">Closing balance</div><div class="value" id="statClosing">—</div></div>
+    </div>
+
+    <div class="section-title" style="margin-top:30px;"><h2>Day-wise deposit</h2><div class="rule"></div></div>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>SL</th><th>Date</th><th>Cash deposit to bank</th><th>Online</th><th>Easy Pay</th></tr></thead>
+          <tbody id="tblBody"></tbody>
+          <tfoot><tr><td></td><td>Total</td><td id="footCash"></td><td id="footOnline"></td><td id="footEasypay"></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-title"><h2>Reconciliation</h2><div class="rule"></div></div>
+    <div class="recon">
+      <div class="recon-row"><span>1. Opening balance (RCDC)</span><span class="amt" id="rOpening">—</span></div>
+      <div class="recon-row"><span>2. Total collection</span><span class="amt" id="rCollection">—</span></div>
+      <div class="recon-row"><span>3. Total deposit</span><span class="amt" id="rDeposit">—</span></div>
+      <div class="recon-row final"><span>4. Closing balance as per cash book</span><span class="amt" id="rClosing">—</span></div>
+    </div>
+
+    <div class="download-row">
+      <button class="secondary" id="btnDownload">Download Excel (.xlsx)</button>
+    </div>
+  </div>
+
+  <footer>RCDC Deposit Statement Generator — runs entirely in your browser, no data is uploaded anywhere.</footer>
+</div>
+
+</div>
+
+<div id="dwApp" class="app-pane">
 <div class="topbar">
   <div class="mark">
     <div class="glyph">DW</div>
@@ -473,9 +569,475 @@
 
 <footer>Runs entirely in your browser &mdash; no data leaves your device.</footer>
 
+</div>
+
 <script>
 (function(){
+  const buttons = document.querySelectorAll('#tabBar .tab-btn');
+  const panes = document.querySelectorAll('.app-pane');
+  buttons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      buttons.forEach(b=>b.classList.remove('active'));
+      panes.forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+})();
+</script>
 
+<script>
+(function(){
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const fMonth = document.getElementById('fMonth');
+monthNames.forEach((m,i)=>{
+  const o = document.createElement('option');
+  o.value = i+1; o.textContent = m;
+  fMonth.appendChild(o);
+});
+fMonth.value = 5; // default May, matches current sample context
+
+let misRows = null, hwRows = null;
+let lastResult = null;
+
+function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+
+function excelSerialToYMD(serial){
+  // Excel's day-count epoch is Dec 30, 1899 — adding the serial as whole days
+  // (via real calendar math) reproduces Excel's dates correctly for any
+  // modern date, with no dependency on any library's internal date routine.
+  const wholeDays = Math.round(serial);
+  const ms = Date.UTC(1899, 11, 30) + wholeDays * 86400000;
+  const d = new Date(ms);
+  return {y: d.getUTCFullYear(), m: d.getUTCMonth()+1, d: d.getUTCDate()};
+}
+
+function parseDateVal(v){
+  if(typeof v === 'number'){
+    return excelSerialToYMD(v);
+  }
+  if(typeof v === 'string'){
+    const s = v.trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return {y:+m[1], m:+m[2], d:+m[3]};
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if(m) return {y:+m[3], m:+m[2], d:+m[1]};
+  }
+  return null;
+}
+
+function isoDate(dv){
+  return dv.y+'-'+String(dv.m).padStart(2,'0')+'-'+String(dv.d).padStart(2,'0');
+}
+
+function daysInMonth(year, month){
+  // 0th day of next month = last day of this month, computed purely arithmetically
+  const leap = (year%4===0 && year%100!==0) || year%400===0;
+  const table = [31, leap?29:28, 31,30,31,30,31,31,30,31,30,31];
+  return table[month-1];
+}
+
+function readSheetAsRows(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+        resolve(rows);
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = ()=>reject(new Error('Could not read file'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function parseMis(rows){
+  const header = rows[0].map(h=>norm(h));
+  const dateIdx = header.findIndex(h=>h.includes('date'));
+  const collectorIdx = header.findIndex(h=>h.includes('collector'));
+  const slIdx = header.findIndex(h=>h==='slno'||h.includes('sl'));
+  const amountIdxs = [];
+  header.forEach((h,i)=>{
+    if(i===dateIdx || i===collectorIdx || i===slIdx) return;
+    if(!h) return;
+    amountIdxs.push(i);
+  });
+  const out = [];
+  for(let r=1;r<rows.length;r++){
+    const row = rows[r];
+    if(!row || row.every(c=>c===null||c==='')) continue;
+    const date = parseDateVal(row[dateIdx]);
+    if(!date) continue;
+    let total = 0;
+    amountIdxs.forEach(i=>{
+      const v = parseFloat(row[i]);
+      if(!isNaN(v)) total += v;
+    });
+    const collectorId = String(row[collectorIdx]??'').trim();
+    out.push({date, collectorId, total});
+  }
+  return out;
+}
+
+function parseHeadwise(rows){
+  const header = rows[0].map(h=>norm(h));
+  const billHeadIdx = header.findIndex(h=>h.includes('billhead'));
+  const amountIdx = header.findIndex(h=>h==='amount');
+  const dateIdx = header.findIndex(h=>h.includes('paymentdate') || (h.includes('date') && !h.includes('bill')));
+  const out = [];
+  for(let r=1;r<rows.length;r++){
+    const row = rows[r];
+    if(!row || row.every(c=>c===null||c==='')) continue;
+    const date = parseDateVal(row[dateIdx]);
+    if(!date) continue;
+    const billHead = String(row[billHeadIdx]??'').trim();
+    const amount = parseFloat(row[amountIdx]) || 0;
+    out.push({date, billHead, amount});
+  }
+  return out;
+}
+
+function setDropzone(dz, fileLabelEl, filename){
+  dz.classList.add('filled');
+  fileLabelEl.textContent = filename;
+}
+
+function detectMonthYear(rows){
+  if(!rows || !rows.length) return null;
+  const counts = {};
+  rows.forEach(r=>{
+    const key = r.date.y+'-'+r.date.m;
+    counts[key] = (counts[key]||0)+1;
+  });
+  let best=null, bestCount=-1;
+  Object.entries(counts).forEach(([k,c])=>{ if(c>bestCount){best=k; bestCount=c;} });
+  if(!best) return null;
+  const [y,m] = best.split('-').map(Number);
+  return {year:y, month:m};
+}
+
+document.getElementById('fileMis').addEventListener('change', async e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  document.getElementById('statusMsg').textContent = 'Reading MIS Daily Collection…';
+  document.getElementById('statusMsg').className = 'status';
+  try{
+    const rows = await readSheetAsRows(f);
+    misRows = parseMis(rows);
+    setDropzone(document.getElementById('dzMis'), document.getElementById('dzMisFile'), f.name+' — '+misRows.length+' rows');
+    const my = detectMonthYear(misRows);
+    if(my){ fMonth.value = my.month; document.getElementById('fYear').value = my.year; }
+    checkReady();
+    document.getElementById('statusMsg').textContent = '';
+  }catch(err){
+    document.getElementById('statusMsg').textContent = 'Could not read MIS file: '+err.message;
+    document.getElementById('statusMsg').className = 'status err';
+  }
+});
+
+document.getElementById('fileHw').addEventListener('change', async e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  document.getElementById('statusMsg').textContent = 'Reading Headwise Collection Report…';
+  document.getElementById('statusMsg').className = 'status';
+  try{
+    const rows = await readSheetAsRows(f);
+    hwRows = parseHeadwise(rows);
+    setDropzone(document.getElementById('dzHw'), document.getElementById('dzHwFile'), f.name+' — '+hwRows.length+' rows');
+    if(!misRows){
+      const my = detectMonthYear(hwRows);
+      if(my){ fMonth.value = my.month; document.getElementById('fYear').value = my.year; }
+    }
+    checkReady();
+    document.getElementById('statusMsg').textContent = '';
+  }catch(err){
+    document.getElementById('statusMsg').textContent = 'Could not read Headwise file: '+err.message;
+    document.getElementById('statusMsg').className = 'status err';
+  }
+});
+
+function checkReady(){
+  document.getElementById('btnGenerate').disabled = !(misRows && hwRows);
+}
+
+function inr(n){ return new Intl.NumberFormat('en-IN').format(Math.round(n)); }
+
+function computeStatement(){
+  const month = parseInt(fMonth.value,10);
+  const year = parseInt(document.getElementById('fYear').value,10);
+  const subdiv = document.getElementById('fSubdiv').value.trim();
+  const opening = parseFloat(document.getElementById('fOpening').value) || 0;
+  const cashIds = document.getElementById('fCashIds').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const onlineId = document.getElementById('fOnlineId').value.trim();
+  const disconnHeads = document.getElementById('fDisconnHeads').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+  const numDays = daysInMonth(year, month);
+
+  const misMonth = misRows.filter(r=>r.date.y===year && r.date.m===month);
+  const hwMonth = hwRows.filter(r=>r.date.y===year && r.date.m===month && disconnHeads.includes(r.billHead));
+
+  const dayRows = [];
+  for(let d=1; d<=numDays; d++){
+    const key = year+'-'+String(month).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const misDay = misMonth.filter(r=>isoDate(r.date)===key);
+    const misTotal = misDay.reduce((s,r)=>s+r.total,0);
+    const cashMis = misDay.filter(r=>cashIds.includes(r.collectorId)).reduce((s,r)=>s+r.total,0);
+    const onlineMis = misDay.filter(r=>r.collectorId.toUpperCase()===onlineId.toUpperCase()).reduce((s,r)=>s+r.total,0);
+    const easypay = misTotal - cashMis - onlineMis;
+    const hwDay = hwMonth.filter(r=>isoDate(r.date)===key).reduce((s,r)=>s+r.amount,0);
+    const cash = cashMis + hwDay;
+    dayRows.push({sl:d, cash, online:onlineMis, easypay});
+  }
+
+  const totalCash = dayRows.reduce((s,r)=>s+r.cash,0);
+  const totalOnline = dayRows.reduce((s,r)=>s+r.online,0);
+  const totalEasypay = dayRows.reduce((s,r)=>s+r.easypay,0);
+  const misAllTotal = misMonth.reduce((s,r)=>s+r.total,0);
+  const hwAllTotal = hwMonth.reduce((s,r)=>s+r.amount,0);
+  const totalCollection = misAllTotal + hwAllTotal;
+  const totalDeposit = totalCash + totalOnline + totalEasypay;
+  const closing = opening + totalCollection - totalDeposit;
+
+  return {
+    month, year, subdiv, opening, cashIds, onlineId, disconnHeads, numDays,
+    dayRows, totalCash, totalOnline, totalEasypay, totalCollection, totalDeposit, closing
+  };
+}
+
+function renderResults(res){
+  document.getElementById('resultsArea').style.display = 'block';
+  document.getElementById('statOpening').textContent = '₹'+inr(res.opening);
+  document.getElementById('statCollection').textContent = '₹'+inr(res.totalCollection);
+  document.getElementById('statDeposit').textContent = '₹'+inr(res.totalDeposit);
+  document.getElementById('statClosing').textContent = '₹'+inr(res.closing);
+
+  document.getElementById('rOpening').textContent = '₹'+inr(res.opening);
+  document.getElementById('rCollection').textContent = '₹'+inr(res.totalCollection);
+  document.getElementById('rDeposit').textContent = '₹'+inr(res.totalDeposit);
+  document.getElementById('rClosing').textContent = '₹'+inr(res.closing);
+
+  const tbody = document.getElementById('tblBody');
+  tbody.innerHTML = '';
+  res.dayRows.forEach(r=>{
+    const tr = document.createElement('tr');
+    const dstr = String(r.sl).padStart(2,'0')+'-'+String(res.month).padStart(2,'0')+'-'+res.year;
+    tr.innerHTML = `<td>${r.sl}</td><td>${dstr}</td><td>${inr(r.cash)}</td><td>${inr(r.online)}</td><td>${inr(r.easypay)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('footCash').textContent = inr(res.totalCash);
+  document.getElementById('footOnline').textContent = inr(res.totalOnline);
+  document.getElementById('footEasypay').textContent = inr(res.totalEasypay);
+
+  document.getElementById('resultsArea').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.getElementById('btnGenerate').addEventListener('click', ()=>{
+  try{
+    lastResult = computeStatement();
+    renderResults(lastResult);
+    document.getElementById('statusMsg').textContent = 'Statement generated.';
+    document.getElementById('statusMsg').className = 'status ok';
+  }catch(err){
+    document.getElementById('statusMsg').textContent = 'Could not generate statement: '+err.message;
+    document.getElementById('statusMsg').className = 'status err';
+  }
+});
+
+const THIN = {style:'thin', color:{argb:'FF9AA5B1'}};
+const BORDER_ALL = {top:THIN, left:THIN, bottom:THIN, right:THIN};
+const NAVY = 'FF1B3358';
+const NAVY_DEEP = 'FF12233E';
+const BAND = 'FFF4F6F8';
+const TOTAL_FILL = 'FFE9EDF3';
+const CLOSING_FILL = 'FFE7F4EC';
+
+function styleRange(ws, r1, c1, r2, c2, fn){
+  for(let r=r1;r<=r2;r++){
+    for(let c=c1;c<=c2;c++){
+      fn(ws.getCell(r,c), r, c);
+    }
+  }
+}
+
+async function buildWorkbook(res){
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'RCDC Deposit Statement Generator';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('RCDC Deposit Statement', {
+    views:[{state:'frozen', ySplit:5}]
+  });
+
+  ws.columns = [
+    {width:8}, {width:13}, {width:20}, {width:14}, {width:14}, {width:26}, {width:3}, {width:16}, {width:15}
+  ];
+
+  const startRow = 6;
+  const totalRow = startRow + res.dayRows.length;
+  const sumRow1 = totalRow + 4;
+  const sumRow2 = sumRow1 + 1;
+  const sumRow3 = sumRow1 + 2;
+  const sumRow4 = sumRow1 + 3;
+  const lastRow = sumRow4;
+
+  // ---------- Title block ----------
+  ws.mergeCells(1,1,1,6);
+  const titleCell = ws.getCell(1,1);
+  titleCell.value = 'STATEMENT ON RCDC DEPOSIT TO "APDCL SUBSIDIARY A/C", BED';
+  titleCell.font = {name:'Calibri', size:14, bold:true, color:{argb:'FFFFFFFF'}};
+  titleCell.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(1).height = 28;
+  styleRange(ws,1,1,1,6, c=>{ c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY}}; });
+
+  ws.mergeCells(2,1,2,6);
+  const monthCell = ws.getCell(2,1);
+  monthCell.value = 'FOR THE MONTH OF '+monthNames[res.month-1].toUpperCase()+' - '+res.year;
+  monthCell.font = {name:'Calibri', size:11.5, bold:true, color:{argb:'FFFFFFFF'}};
+  monthCell.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(2).height = 20;
+  styleRange(ws,2,1,2,6, c=>{ c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY_DEEP}}; });
+
+  ws.mergeCells(3,1,3,6);
+  const subCell = ws.getCell(3,1);
+  subCell.value = 'NAME OF SUB-DIVISION: '+res.subdiv.toUpperCase();
+  subCell.font = {name:'Calibri', size:11, bold:true, color:{argb:'FFFFFFFF'}};
+  subCell.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(3).height = 19;
+  styleRange(ws,3,1,3,6, c=>{ c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY_DEEP}}; });
+
+  // ---------- Table header ----------
+  const headerDefs = [
+    [1, 'SL NO'], [2, 'DATE'], [3, 'CASH DEPOSIT\nTO BANK'], [4, 'ONLINE'], [5, 'EASY PAY'], [6, 'REMARKS']
+  ];
+  headerDefs.forEach(([col, label])=>{
+    ws.mergeCells(4,col,5,col);
+    const c = ws.getCell(4,col);
+    c.value = label;
+    c.font = {name:'Calibri', size:10.5, bold:true, color:{argb:'FFFFFFFF'}};
+    c.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
+  });
+  ws.getRow(4).height = 30;
+  ws.getRow(5).height = 4;
+  styleRange(ws,4,1,5,6, c=>{
+    c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:NAVY}};
+    c.border = BORDER_ALL;
+  });
+
+  // ---------- Day rows ----------
+  res.dayRows.forEach((r, idx)=>{
+    const row = startRow + idx;
+    const banded = idx % 2 === 1;
+
+    const cSl = ws.getCell(row,1); cSl.value = r.sl;
+    cSl.alignment = {horizontal:'center'};
+    const cDate = ws.getCell(row,2);
+    cDate.value = String(r.sl).padStart(2,'0')+'-'+String(res.month).padStart(2,'0')+'-'+res.year;
+    cDate.alignment = {horizontal:'center'};
+    const cCash = ws.getCell(row,3); cCash.numFmt = '#,##0.00'; // left blank for manual entry
+    const cOnline = ws.getCell(row,4); cOnline.value = r.online; cOnline.numFmt = '#,##0.00';
+    const cEasy = ws.getCell(row,5); cEasy.value = r.easypay; cEasy.numFmt = '#,##0.00';
+    ws.getCell(row,6).value = '';
+
+    styleRange(ws,row,1,row,6, (c, rr, cc)=>{
+      c.border = BORDER_ALL;
+      c.font = {name:'Calibri', size:10.5, color:{argb:'FF1F2430'}};
+      if(cc>=3) c.alignment = {horizontal:'right'};
+      if(banded) c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:BAND}};
+    });
+  });
+
+  // ---------- TOTAL row ----------
+  const tCell = ws.getCell(totalRow,1);
+  ws.mergeCells(totalRow,1,totalRow,2);
+  tCell.value = 'TOTAL';
+  tCell.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getCell(totalRow,3).value = {formula: `SUM(C${startRow}:C${totalRow-1})`, result: 0};
+  ws.getCell(totalRow,4).value = {formula: `SUM(D${startRow}:D${totalRow-1})`, result: res.totalOnline};
+  ws.getCell(totalRow,5).value = {formula: `SUM(E${startRow}:E${totalRow-1})`, result: res.totalEasypay};
+  [3,4,5].forEach(c=>{ ws.getCell(totalRow,c).numFmt = '#,##0.00'; ws.getCell(totalRow,c).alignment = {horizontal:'right'}; });
+  styleRange(ws,totalRow,1,totalRow,6, c=>{
+    c.font = {name:'Calibri', size:11, bold:true, color:{argb:NAVY_DEEP}};
+    c.border = {top:{style:'medium', color:{argb:NAVY}}, left:THIN, bottom:{style:'medium', color:{argb:NAVY}}, right:THIN};
+    c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:TOTAL_FILL}};
+  });
+  ws.getRow(totalRow).height = 20;
+
+  // ---------- Reconciliation summary ----------
+  const depositWithBlankCash = res.totalOnline + res.totalEasypay; // cash column starts blank, filled in manually
+  const closingWithBlankCash = res.opening + res.totalCollection - depositWithBlankCash;
+  const summaryDefs = [
+    [sumRow1, '1. Opening Balance (RCDC) :-', res.opening, false, null],
+    [sumRow2, '2. Total Collection :-', res.totalCollection, false, null],
+    [sumRow3, '3. Total Deposit :-', depositWithBlankCash, false, `C${totalRow}+D${totalRow}+E${totalRow}`],
+    [sumRow4, '4. Closing Balance as per Cash Book :-', closingWithBlankCash, true, `F${sumRow1}+F${sumRow2}-F${sumRow3}`],
+  ];
+  summaryDefs.forEach(([row, label, value, isFinal, formula])=>{
+    ws.mergeCells(row,1,row,5);
+    const lc = ws.getCell(row,1);
+    lc.value = label;
+    lc.alignment = {horizontal:'right', vertical:'middle'};
+    lc.font = {name:'Calibri', size:11, bold:true, color:{argb: isFinal ? 'FF0E7C4F' : 'FF1F2430'}};
+
+    const vc = ws.getCell(row,6);
+    vc.value = formula ? {formula, result: value} : value;
+    vc.numFmt = '#,##0.00';
+    vc.alignment = {horizontal:'right', vertical:'middle'};
+    vc.font = {name:'Calibri', size:11.5, bold:true, color:{argb: isFinal ? 'FF0E7C4F' : NAVY_DEEP}};
+
+    styleRange(ws,row,1,row,6, c=>{
+      c.border = BORDER_ALL;
+      if(isFinal) c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:CLOSING_FILL}};
+    });
+    ws.getRow(row).height = 20;
+  });
+
+  return wb;
+}
+
+document.getElementById('btnDownload').addEventListener('click', async ()=>{
+  if(!lastResult) return;
+  const btn = document.getElementById('btnDownload');
+  const prevText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Building file…';
+  try{
+    const wb = await buildWorkbook(lastResult);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const fname = `RCDC_DEPOSIT_STATEMENT_${monthNames[lastResult.month-1]}-${lastResult.year}.xlsx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(err){
+    document.getElementById('statusMsg').textContent = 'Could not build Excel file: '+err.message;
+    document.getElementById('statusMsg').className = 'status err';
+  }finally{
+    btn.disabled = false; btn.textContent = prevText;
+  }
+});
+
+// drag & drop wiring
+['dzMis','dzHw'].forEach(id=>{
+  const dz = document.getElementById(id);
+  const input = dz.querySelector('input');
+  dz.addEventListener('click', e=>{ if(e.target!==input) input.click(); });
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    if(e.dataTransfer.files.length){
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+});
+})();
+</script>
+
+<script>
+(function(){
   // ---------- classification rules ----------
   // Order matters: first match wins.
   const RULES = [
@@ -1014,5 +1576,6 @@
 
 })();
 </script>
+
 </body>
 </html>
